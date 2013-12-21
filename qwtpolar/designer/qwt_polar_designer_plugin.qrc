@@ -1,0 +1,5 @@
+<!DOCTYPE RCC><RCC version="1.0">
+    <qresource>
+        <file>pixmaps/qwt_polar_plot.png</file>
+    </qresource>
+</RCC>

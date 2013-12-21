@@ -1,0 +1,36 @@
+# -*- mode: sh -*- ##############################################
+# QwtPolar Widget Library
+# Copyright (C) 2008   Uwe Rathmann
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the Qwt License, Version 1.0
+#################################################################
+
+include ( ./qwtpolarconfig.pri )
+
+contains(QWT_POLAR_CONFIG, QwtPolarDll) {
+
+    DEFINES *= QWT_POLAR_DLL
+}
+
+contains(QWT_CONFIG, QwtPolarSvg) {
+
+    QT      *= svg
+}
+else {
+
+    DEFINES *= QWT_POLAR_NO_SVG
+}
+
+contains(QWT_CONFIG, QwtFramework) {
+
+    INCLUDEPATH *= $${QWT_POLAR_INSTALL_LIBS}/qwtpolar.framework/Headers
+    LIBS        *= -F$${QWT_POLAR_INSTALL_LIBS}
+}
+else {
+
+    INCLUDEPATH *= $${QWT_POLAR_INSTALL_HEADERS}
+    LIBS        *= -L$${QWT_POLAR_INSTALL_LIBS}
+}
+
+qwtPolarAddLibrary(qwtpolar)
