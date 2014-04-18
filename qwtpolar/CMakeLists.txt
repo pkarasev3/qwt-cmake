@@ -28,7 +28,7 @@ target_link_libraries(qwtpolarX
                                  )
                                  #${QWT_LIBRARY}  )
 
-set_target_properties(qwtpolarX PROPERTIES VS_SCC_PROJECTNAME "SAK" VS_SCC_LOCALPATH "SAK" VS_SCC_PROVIDER "SAK")
+set_target_properties(qwtpolarX PROPERTIES VS_SCC_PROJECTNAME "SAK" VS_SCC_LOCALPATH "SAK" VS_SCC_PROVIDER "SAK" VS_SCC_AUXPATH "SAK")
 
 
 include(CMakeInstallPackage.txt)

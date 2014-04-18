@@ -104,8 +104,8 @@ public:
     QwtPolarPlot::LegendPosition legendPos;
     double legendRatio;
 
-    unsigned int margin;
-    unsigned int spacing;
+    int margin;
+    int spacing;
 };
 
 /*!

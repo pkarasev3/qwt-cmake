@@ -51,7 +51,7 @@ MainWindow::MainWindow( QWidget *parent ):
     QSlider *slider = new QSlider( Qt::Horizontal );
     slider->setRange( 0, 255 );
     slider->setValue( 255 );
-    connect( slider, SIGNAL( valueChanged( int ) ), 
+    connect( slider, SIGNAL( valueChanged( int ) ),
         d_plot, SLOT( setAlpha( int ) ) );
 
     toolBar->addWidget( slider );
@@ -68,7 +68,7 @@ int main( int argc, char **argv )
     QApplication a( argc, argv );
 
     MainWindow mainWindow;
-    mainWindow.resize( 600, 400 );
+    mainWindow.setGeometry(1,600,256,256);
     mainWindow.show();
 
     return a.exec();

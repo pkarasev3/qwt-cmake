@@ -60,7 +60,7 @@ public:
     QwtScaleEngine *scaleEngine;
 };
 
-class QwtPolarPlot::PrivateData
+class  QWT_POLAR_EXPORT  QwtPolarPlot::PrivateData
 {
 public:
     QBrush canvasBrush;
@@ -190,7 +190,7 @@ void QwtPolarPlot::insertLegend( QwtAbstractLegend *legend,
     QwtPolarPlot::LegendPosition pos, double ratio )
 {
     d_data->layout->setLegendPosition( pos, ratio );
-    qDebug()<<this<<" new legend inserted";
+
     if ( legend != d_data->legend )
     {
         if ( d_data->legend && d_data->legend->parent() == this )
@@ -540,6 +540,8 @@ void QwtPolarPlot::setScale( int scaleId,
     scaleData.stepSize = stepSize;
     scaleData.doAutoScale = false;
 
+    Q_EMIT scaleDivChanged();
+
     autoRefresh();
 }
 
@@ -559,6 +561,8 @@ void QwtPolarPlot::setScaleDiv( int scaleId, const QwtScaleDiv &scaleDiv )
     scaleData.scaleDiv = scaleDiv;
     scaleData.isValid = true;
     scaleData.doAutoScale = false;
+
+    Q_EMIT scaleDivChanged();
 
     autoRefresh();
 }
@@ -656,6 +660,8 @@ void QwtPolarPlot::zoom( const QwtPointPolar &zoomPos, double zoomFactor )
         d_data->zoomFactor = zoomFactor;
         updateLayout();
         autoRefresh();
+
+        Q_EMIT zoomFactorChanged();
     }
 }
 
@@ -670,6 +676,8 @@ void QwtPolarPlot::unzoom()
         d_data->zoomFactor = 1.0;
         d_data->zoomPos = QwtPointPolar();
         autoRefresh();
+
+        Q_EMIT zoomFactorChanged();
     }
 }
 
@@ -933,7 +941,7 @@ void QwtPolarPlot::drawCanvas( QPainter *painter,
 
     static double previous_radius=0.0;
     const double radius = pr.width() / 2.0;
-    std::cout << previous_radius << "," << radius << "\r"; std::cout.flush();
+    //std::cout << previous_radius << "," << radius << "\r"; std::cout.flush();
     previous_radius     = radius;
 
 
@@ -1287,7 +1295,7 @@ const QwtPolarLayout *QwtPolarPlot::plotLayout() const
 }
 
 /*!
-  \brief Attach/Detach a plot item 
+  \brief Attach/Detach a plot item
 
   \param plotItem Plot item
   \param on When true attach the item, otherwise detach it
@@ -1348,7 +1356,7 @@ QVariant QwtPolarPlot::itemToInfo( QwtPolarItem *plotItem ) const
   \brief Identify the plot item according to an item info object,
          that has bee generated from itemToInfo().
 
-  The default implementation simply tries to unwrap a QwtPlotItem 
+  The default implementation simply tries to unwrap a QwtPlotItem
   pointer:
 
 \code

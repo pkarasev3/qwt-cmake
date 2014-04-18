@@ -12,7 +12,7 @@
 #include <qwt_scale_div.h>
 #include <qpainter.h>
 
-class QwtPolarItem::PrivateData
+class QWT_POLAR_EXPORT QwtPolarItem::PrivateData
 {
 public:
     PrivateData():
@@ -93,9 +93,9 @@ void QwtPolarItem::attach( QwtPolarPlot *plot )
    detach() is equivalent to calling attach( NULL )
    \sa attach()
 */
-void QwtPolarItem::detach() 
-{ 
-    attach( NULL ); 
+void QwtPolarItem::detach()
+{
+    attach( NULL );
 }
 
 /*!
@@ -258,8 +258,8 @@ bool QwtPolarItem::testRenderHint( RenderHint hint ) const
 }
 
 /*!
-   On multi core systems rendering of certain plot item 
-   ( f.e QwtPolarSpectrogram ) can be done in parallel in 
+   On multi core systems rendering of certain plot item
+   ( f.e QwtPolarSpectrogram ) can be done in parallel in
    several threads.
 
    The default setting is set to 1.
@@ -417,11 +417,11 @@ void QwtPolarItem::updateScaleDiv( const QwtScaleDiv &azimuthScaleDiv,
    showing an icon and a text.
 
    QwtLegendData is basically a list of QVariants that makes it
-   possible to overload and reimplement legendData() to 
+   possible to overload and reimplement legendData() to
    return almost any type of information, that is understood
    by the receiver that acts as the legend.
 
-   The default implementation returns one entry with 
+   The default implementation returns one entry with
    the title() of the item and the legendIcon().
 
    \sa title(), legendIcon(), QwtLegend
@@ -456,7 +456,7 @@ QList<QwtLegendData> QwtPolarItem::legendData() const
 
    The default implementation returns an invalid icon
 
-   \param index Index of the legend entry 
+   \param index Index of the legend entry
                 ( usually there is only one )
    \param size Icon size
 

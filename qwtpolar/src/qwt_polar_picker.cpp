@@ -13,13 +13,6 @@
 #include <qwt_picker_machine.h>
 #include <qwt_point_polar.h>
 
-class QwtPolarPicker::PrivateData
-{
-public:
-    PrivateData()
-    {
-    }
-};
 
 /*!
   \brief Create a polar plot picker
@@ -44,7 +37,7 @@ QwtPolarPicker::QwtPolarPicker( QwtPolarCanvas *canvas ):
 
   \sa QwtPolarPlot::autoReplot(), QwtPolarPlot::replot(), scaleRect()
 */
-QwtPolarPicker::QwtPolarPicker( 
+QwtPolarPicker::QwtPolarPicker(
         RubberBand rubberBand, DisplayMode trackerMode,
         QwtPolarCanvas *canvas ):
     QwtPicker( rubberBand, trackerMode, canvas )

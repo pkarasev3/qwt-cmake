@@ -214,8 +214,8 @@ void QwtPolarCanvas::paintEvent( QPaintEvent *event )
                 {
                     QWidget *bgWidget = qwtBackgroundWidget( plot() );
 
-					QwtPainter::fillPixmap( bgWidget, bs,
-						mapTo( bgWidget, rect().topLeft() ) );
+                    QwtPainter::fillPixmap( bgWidget, bs,
+                        mapTo( bgWidget, rect().topLeft() ) );
 
                     p.begin( &bs );
                 }
@@ -318,3 +318,5 @@ QPoint QwtPolarCanvas::transform( const QwtPointPolar &polarPos ) const
 
     return pos.toPoint();
 }
+
+

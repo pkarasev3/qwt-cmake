@@ -407,11 +407,13 @@ void QwtPolarCurve::drawLines( QPainter *painter,
         for ( int i = from; i <= to; i++ )
         {
             QwtPointPolar point = sample( i );
+            Q_ASSERT_X(point.radius() >= 0, __FUNCTION__, QString(" \xE2\x98\xA0 ! got Radius < 0.0 "));
             if ( !qwtInsidePole( radialMap, point.radius() ) )
             {
-                double r = radialMap.transform( point.radius() );
+                double r       = radialMap.transform( point.radius() );
                 const double a = azimuthMap.transform( point.azimuth() );
-                polylineData[i - from] = qwtPolar2Pos( pole, r, a );
+                auto pos_xy    = qwtPolar2Pos( pole, r, a /*radians!*/ );
+                polylineData[i - from] = pos_xy;
             }
             else
             {
