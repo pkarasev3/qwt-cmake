@@ -82,7 +82,7 @@ public:
     };
 
     explicit QwtPolarPlot( QWidget *parent = NULL );
-    explicit QwtPolarPlot( const QwtText &title, QWidget *parent = NULL );
+    QwtPolarPlot( const QwtText &title, QWidget *parent = NULL );
 
     virtual ~QwtPolarPlot();
 
@@ -172,12 +172,12 @@ Q_SIGNALS:
      */
     void itemAttached( QwtPolarItem *plotItem, bool on );
 
-    /*!
-      A signal with the attributes how to update
+    /*! 
+      A signal with the attributes how to update 
       the legend entries for a plot item.
-
+                
       \param itemInfo Info about a plot, build from itemToInfo()
-
+    
       \sa itemToInfo(), infoToItem(), QwtAbstractLegend::updateLegend()
      */
     void legendDataChanged( const QVariant &itemInfo,
@@ -190,6 +190,7 @@ Q_SIGNALS:
     void layoutChanged();
 
     void scaleDivChanged();
+
     void zoomFactorChanged();
 
 public Q_SLOTS:
@@ -204,10 +205,9 @@ protected:
     virtual void updateLayout();
 
     virtual void drawItems( QPainter *painter,
-        const QwtScaleMap &/*rtfc*/,
-        const QwtScaleMap &/*rtfc*/,
+        const QwtScaleMap &radialMap, const QwtScaleMap &azimuthMap,
         const QPointF &pole, double radius,
-        const QRectF &canvasRect ) const = 0;
+        const QRectF &canvasRect ) const;
 
 private:
     friend class QwtPolarItem;

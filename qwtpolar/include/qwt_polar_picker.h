@@ -95,12 +95,4 @@ private:
     PrivateData *d_data;
 };
 
-class QWT_POLAR_EXPORT  QwtPolarPicker::PrivateData
-{
-public:
-    PrivateData()
-    {
-    }
-};
-
 #endif

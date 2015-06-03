@@ -12,11 +12,46 @@
 #include "qwt_null_paintdevice.h"
 #include "qwt_math.h"
 #include "qwt_plot.h"
+
+#ifndef QWT_NO_OPENGL
+
+#if QT_VERSION < 0x050000
+#define FBO_OPENGL 0
+#else
+#define FBO_OPENGL 1
+#endif
+
+#if FBO_OPENGL
+#include <qopenglcontext.h>
+#include <qopenglframebufferobject.h>
+#include <qopenglpaintdevice.h>
+
+#if QT_VERSION >= 0x050100
+#include <qoffscreensurface.h>
+typedef QOffscreenSurface QwtPlotCanvasSurfaceGL;
+
+#else
+#include <qwindow.h>
+class QwtPlotCanvasSurfaceGL: public QWindow
+{
+public:
+    QwtPlotCanvasSurfaceGL() { setSurfaceType( QWindow::OpenGLSurface ); }
+};
+#endif
+
+#else
+#include <qglframebufferobject.h>
+typedef QGLWidget QwtPlotCanvasSurfaceGL;
+#endif
+
+#endif // !QWT_NO_OPENGL
+
 #include <qpainter.h>
 #include <qstyle.h>
 #include <qstyleoption.h>
 #include <qpaintengine.h>
 #include <qevent.h>
+
 
 class QwtStyleSheetRecorder: public QwtNullPaintDevice
 {
@@ -43,6 +78,12 @@ public:
     }
 
     virtual void drawRects(const QRectF *rects, int count )
+    {
+        for ( int i = 0; i < count; i++ )
+            border.rectList += rects[i];
+    }
+
+    virtual void drawRects(const QRect *rects, int count )
     {
         for ( int i = 0; i < count; i++ )
             border.rectList += rects[i];
@@ -161,11 +202,16 @@ private:
     QPointF d_origin;
 };
 
-static void qwtDrawBackground( QPainter *painter, QwtPlotCanvas *canvas )
+static void qwtDrawBackground( QPainter *painter, QWidget *canvas )
 {
     painter->save();
 
-    const QPainterPath borderClip = canvas->borderPath( canvas->rect() );
+    QPainterPath borderClip;
+    
+    ( void )QMetaObject::invokeMethod(
+        canvas, "borderPath", Qt::DirectConnection,
+        Q_RETURN_ARG( QPainterPath, borderClip ), Q_ARG( QRect, canvas->rect() ) );
+
     if ( !borderClip.isEmpty() )
         painter->setClipPath( borderClip, Qt::IntersectClip );
 
@@ -446,7 +492,7 @@ static void qwtFillBackground( QPainter *painter,
     }
 }
 
-static void qwtFillBackground( QPainter *painter, QwtPlotCanvas *canvas )
+static void qwtFillBackground( QPainter *painter, QWidget *canvas )
 {
     QVector<QRectF> rects;
 
@@ -465,23 +511,120 @@ static void qwtFillBackground( QPainter *painter, QwtPlotCanvas *canvas )
     }
     else
     {
-        const QRectF r = canvas->rect();
-        const double radius = canvas->borderRadius();
-        if ( radius > 0.0 )
+        const double borderRadius = canvas->property( "borderRadius" ).toDouble();
+        if ( borderRadius > 0.0 )
         {
-            QSizeF sz( radius, radius );
+            QSizeF sz( borderRadius, borderRadius );
 
+            const QRectF r = canvas->rect();
             rects += QRectF( r.topLeft(), sz );
-            rects += QRectF( r.topRight() - QPointF( radius, 0 ), sz );
-            rects += QRectF( r.bottomRight() - QPointF( radius, radius ), sz );
-            rects += QRectF( r.bottomLeft() - QPointF( 0, radius ), sz );
+            rects += QRectF( r.topRight() - QPointF( borderRadius, 0 ), sz );
+            rects += QRectF( r.bottomRight() - QPointF( borderRadius, borderRadius ), sz );
+            rects += QRectF( r.bottomLeft() - QPointF( 0, borderRadius ), sz );
         }
     }
 
     qwtFillBackground( painter, canvas, rects);
 }
 
+static QPainterPath qwtBorderPath( const QWidget *canvas, const QRect &rect ) 
+{
+    if ( canvas->testAttribute(Qt::WA_StyledBackground ) )
+    {
+        QwtStyleSheetRecorder recorder( rect.size() );
 
+        QPainter painter( &recorder );
+
+        QStyleOption opt;
+        opt.initFrom( canvas );
+        opt.rect = rect;
+        canvas->style()->drawPrimitive( QStyle::PE_Widget, &opt, &painter, canvas );
+
+        painter.end();
+
+        if ( !recorder.background.path.isEmpty() )
+            return recorder.background.path;
+
+        if ( !recorder.border.rectList.isEmpty() )
+            return qwtCombinePathList( rect, recorder.border.pathList );
+    }
+    else 
+    {
+        const double borderRadius = canvas->property( "borderRadius" ).toDouble();
+
+        if ( borderRadius > 0.0 )
+        {
+            double fw2 = canvas->property( "frameWidth" ).toInt() * 0.5;
+            QRectF r = QRectF(rect).adjusted( fw2, fw2, -fw2, -fw2 );
+
+            QPainterPath path;
+            path.addRoundedRect( r, borderRadius, borderRadius );
+            return path;
+        }
+    }
+
+    return QPainterPath();
+}
+
+static void qwtDrawBorder( QPainter *painter, QWidget *canvas )
+{
+    const double borderRadius = canvas->property( "borderRadius" ).toDouble();
+    if ( borderRadius > 0 )
+    {
+        const int frameWidth = canvas->property( "frameWidth" ).toInt();
+        if ( frameWidth > 0 )
+        {
+            const int frameShape = canvas->property( "frameShape" ).toInt();
+            const int frameShadow = canvas->property( "frameShadow" ).toInt();
+
+            const QRectF frameRect = canvas->property( "frameRect" ).toRect();
+
+            QwtPainter::drawRoundedFrame( painter, frameRect, 
+                borderRadius, borderRadius,
+                canvas->palette(), frameWidth, frameShape | frameShadow );
+        }
+    }
+    else
+    {
+#if QT_VERSION >= 0x040500
+        const int frameShape = canvas->property( "frameShape" ).toInt();
+        const int frameShadow = canvas->property( "frameShadow" ).toInt();
+
+        QStyleOptionFrameV3 opt;
+        opt.init(canvas);
+
+        opt.frameShape = QFrame::Shape( int( opt.frameShape ) | frameShape );
+
+        switch (frameShape) 
+        {
+            case QFrame::Box:
+            case QFrame::HLine:
+            case QFrame::VLine:
+            case QFrame::StyledPanel:
+            case QFrame::Panel:
+            {
+                opt.lineWidth = canvas->property( "lineWidth" ).toInt();
+                opt.midLineWidth = canvas->property( "midLineWidth" ).toInt();
+                break; 
+            }
+            default: 
+            {
+                opt.lineWidth = canvas->property( "frameWidth" ).toInt();
+                break;
+            }
+        }
+    
+        if ( frameShadow == QFrame::Sunken )
+            opt.state |= QStyle::State_Sunken;
+        else if ( frameShadow == QFrame::Raised )
+            opt.state |= QStyle::State_Raised;
+
+        canvas->style()->drawControl(QStyle::CE_ShapedFrame, &opt, painter, canvas);
+#else
+        // TODO: do we really need Qt 4.4 ?
+#endif
+    }
+}
 class QwtPlotCanvas::PrivateData
 {
 public:
@@ -489,6 +632,9 @@ public:
         focusIndicator( NoFocusIndicator ),
         borderRadius( 0 ),
         paintAttributes( 0 ),
+#ifndef QWT_NO_OPENGL
+        surfaceGL( NULL ),
+#endif
         backingStore( NULL )
     {
         styleSheet.hasBorder = false;
@@ -497,11 +643,19 @@ public:
     ~PrivateData()
     {
         delete backingStore;
+#ifndef QWT_NO_OPENGL
+        delete surfaceGL;;
+#endif
     }
 
     FocusIndicator focusIndicator;
     double borderRadius;
     QwtPlotCanvas::PaintAttributes paintAttributes;
+
+#ifndef QWT_NO_OPENGL
+    QwtPlotCanvasSurfaceGL *surfaceGL;
+#endif
+
     QPixmap *backingStore;
 
     struct StyleSheet
@@ -613,8 +767,7 @@ void QwtPlotCanvas::setPaintAttribute( PaintAttribute attribute, bool on )
 
             break;
         }
-        case HackStyledBackground:
-        case ImmediatePaint:
+        default:
         {
             break;
         }
@@ -732,6 +885,15 @@ void QwtPlotCanvas::paintEvent( QPaintEvent *event )
         {
             bs = QwtPainter::backingStore( this, size() );
 
+#ifndef QWT_NO_OPENGL
+            if ( testPaintAttribute( OpenGLBuffer ) )
+            {
+                QPainter p( &bs );
+                p.drawImage( 0, 0, toImageFBO( size() ) );
+                p.end();
+            }
+            else
+#endif
             if ( testAttribute(Qt::WA_StyledBackground) )
             {
                 QPainter p( &bs );
@@ -763,6 +925,13 @@ void QwtPlotCanvas::paintEvent( QPaintEvent *event )
     }
     else
     {
+#ifndef QWT_NO_OPENGL
+        if ( testPaintAttribute( OpenGLBuffer ) )
+        {
+            painter.drawImage( 0, 0, toImageFBO( size() ) );
+        }
+        else
+#endif
         if ( testAttribute(Qt::WA_StyledBackground ) )
         {
             if ( testAttribute( Qt::WA_OpaquePaintEvent ) )
@@ -925,58 +1094,15 @@ void QwtPlotCanvas::drawCanvas( QPainter *painter, bool withBackground )
 */
 void QwtPlotCanvas::drawBorder( QPainter *painter )
 {
-    if ( d_data->borderRadius > 0 )
-    {
-        if ( frameWidth() > 0 )
-        {
-            QwtPainter::drawRoundedFrame( painter, QRectF( frameRect() ), 
-                d_data->borderRadius, d_data->borderRadius,
-                palette(), frameWidth(), frameStyle() );
-        }
-    }
-    else
-    {
 #if QT_VERSION >= 0x040500
-        QStyleOptionFrameV3 opt;
-        opt.init(this);
-
-        int frameShape  = frameStyle() & QFrame::Shape_Mask;
-        int frameShadow = frameStyle() & QFrame::Shadow_Mask;
-
-        opt.frameShape = QFrame::Shape( int( opt.frameShape ) | frameShape );
-#if 0
-        opt.rect = frameRect();
-#endif
-
-        switch (frameShape) 
-        {
-            case QFrame::Box:
-            case QFrame::HLine:
-            case QFrame::VLine:
-            case QFrame::StyledPanel:
-            case QFrame::Panel:
-            {
-                opt.lineWidth = lineWidth();
-                opt.midLineWidth = midLineWidth();
-                break; 
-            }
-            default: 
-            {
-                opt.lineWidth = frameWidth();
-                break;
-            }
-        }
-    
-        if ( frameShadow == Sunken )
-            opt.state |= QStyle::State_Sunken;
-        else if ( frameShadow == Raised )
-            opt.state |= QStyle::State_Raised;
-
-        style()->drawControl(QStyle::CE_ShapedFrame, &opt, painter, this);
-#else
+    if ( d_data->borderRadius <= 0 )
+    {
         drawFrame( painter );
-#endif
+        return;
     }
+#endif
+
+    qwtDrawBorder( painter, this );
 }
 
 /*!
@@ -1064,34 +1190,81 @@ void QwtPlotCanvas::updateStyleSheetInfo()
 */
 QPainterPath QwtPlotCanvas::borderPath( const QRect &rect ) const
 {
-    if ( testAttribute(Qt::WA_StyledBackground ) )
-    {
-        QwtStyleSheetRecorder recorder( rect.size() );
-
-        QPainter painter( &recorder );
-
-        QStyleOption opt;
-        opt.initFrom(this);
-        opt.rect = rect;
-        style()->drawPrimitive( QStyle::PE_Widget, &opt, &painter, this);
-
-        painter.end();
-
-        if ( !recorder.background.path.isEmpty() )
-            return recorder.background.path;
-
-        if ( !recorder.border.rectList.isEmpty() )
-            return qwtCombinePathList( rect, recorder.border.pathList );
-    }
-    else if ( d_data->borderRadius > 0.0 )
-    {
-        double fw2 = frameWidth() * 0.5;
-        QRectF r = QRectF(rect).adjusted( fw2, fw2, -fw2, -fw2 );
-
-        QPainterPath path;
-        path.addRoundedRect( r, d_data->borderRadius, d_data->borderRadius );
-        return path;
-    }
-    
-    return QPainterPath();
+    return qwtBorderPath( this, rect );
 }
+
+#ifndef QWT_NO_OPENGL
+
+#define FIX_GL_TRANSLATION 0
+
+QImage QwtPlotCanvas::toImageFBO( const QSize &size ) 
+{
+    const int numSamples = 16;
+
+#if FBO_OPENGL
+
+    if ( d_data->surfaceGL == NULL )
+    {
+        d_data->surfaceGL = new QwtPlotCanvasSurfaceGL();
+        d_data->surfaceGL->create();
+    }
+
+    QOpenGLContext context;
+    context.create();
+
+    context.makeCurrent( d_data->surfaceGL );
+
+
+    QOpenGLFramebufferObjectFormat fboFormat;
+    fboFormat.setSamples(numSamples);
+    QOpenGLFramebufferObject fbo( size, fboFormat );
+
+    QOpenGLPaintDevice pd( size );
+
+#else
+
+    if ( d_data->surfaceGL == NULL )
+    {
+        QGLFormat format = QGLFormat::defaultFormat();
+        format.setSampleBuffers( true );
+        format.setSamples( numSamples );
+
+        d_data->surfaceGL = new QwtPlotCanvasSurfaceGL( format );
+    }
+
+    d_data->surfaceGL->makeCurrent();
+
+#if QT_VERSION >= 0x040600
+    QGLFramebufferObjectFormat fboFormat;
+    fboFormat.setSamples(numSamples);
+
+    QGLFramebufferObject fbo( size, fboFormat );
+#else
+    QGLFramebufferObject fbo( size );
+#endif
+    QGLFramebufferObject &pd = fbo;
+
+#endif
+
+    QPainter painter( &pd );
+
+    qwtFillBackground( &painter, this );
+    drawCanvas( &painter, true );
+    
+    if ( frameWidth() > 0 )
+        drawBorder( &painter );
+    
+    painter.end();
+
+    return fbo.toImage();
+}
+
+#else
+
+QImage QwtPlotCanvas::toImageFBO( const QSize &)
+{
+    // will never be called
+    return QImage();
+}
+
+#endif

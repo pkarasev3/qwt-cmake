@@ -304,9 +304,9 @@ void QwtPolarCurve::draw( QPainter *painter,
         return;
 
     if ( to < 0 )
-        to = dataSize() - 1;
+        to = (int)dataSize() - 1;
 
-    if ( qwtVerifyRange( dataSize(), from, to ) > 0 )
+    if ( qwtVerifyRange( (int)dataSize(), from, to ) > 0 )
     {
         painter->save();
         painter->setPen( d_data->pen );
@@ -407,7 +407,7 @@ void QwtPolarCurve::drawLines( QPainter *painter,
         for ( int i = from; i <= to; i++ )
         {
             QwtPointPolar point = sample( i );
-            Q_ASSERT_X(point.radius() >= 0, __FUNCTION__, QString(" \xE2\x98\xA0 ! got Radius < 0.0 "));
+            Q_ASSERT(point.radius() >= 0);
             if ( !qwtInsidePole( radialMap, point.radius() ) )
             {
                 double r       = radialMap.transform( point.radius() );

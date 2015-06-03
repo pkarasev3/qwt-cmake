@@ -26,6 +26,7 @@ public:
    \sa setStepCount()
 */
 QwtPolarFitter::QwtPolarFitter( int stepCount )
+    : QwtCurveFitter( QwtCurveFitter::Polygon )
 {
     d_data = new PrivateData;
     d_data->stepCount = stepCount;

@@ -13,6 +13,7 @@
 #include "qwt_global.h"
 #include "qwt_transform.h"
 #include <qrect.h>
+#include <qstring.h>
 
 #ifndef QT_NO_DEBUG_STREAM
 #include <qdebug.h>
@@ -67,6 +68,9 @@ public:
 
     bool isInverting() const;
 
+    QString GetName(){ return m_name; }
+    void    SetName(QString s){ m_name=s; }
+    QString m_name;
 private:
     void updateFactor();
 

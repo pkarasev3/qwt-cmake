@@ -8,94 +8,220 @@
  *****************************************************************************/
 
 #ifndef QWT_SPLINE_H
-#define QWT_SPLINE_H
+#define QWT_SPLINE_H 1
 
 #include "qwt_global.h"
+#include "qwt_spline_polynom.h"
 #include <qpolygon.h>
-#include <qvector.h>
+#include <qpainterpath.h>
+#include <qmath.h>
 
-/*!
-  \brief A class for spline interpolation
-
-  The QwtSpline class is used for cubical spline interpolation.
-  Two types of splines, natural and periodic, are supported.
-
-  \par Usage:
-  <ol>
-  <li>First call setPoints() to determine the spline coefficients
-      for a tabulated function y(x).
-  <li>After the coefficients have been set up, the interpolated
-      function value for an argument x can be determined by calling
-      QwtSpline::value().
-  </ol>
-
-  \par Example:
-  \code
-#include <qwt_spline.h>
-
-QPolygonF interpolate(const QPolygonF& points, int numValues)
+class QWT_EXPORT QwtSplineParameter
 {
-    QwtSpline spline;
-    if ( !spline.setPoints(points) )
-        return points;
-
-    QPolygonF interpolatedPoints(numValues);
-
-    const double delta =
-        (points[numPoints - 1].x() - points[0].x()) / (points.size() - 1);
-    for(i = 0; i < points.size(); i++)  / interpolate
+public:
+    enum Type
     {
-        const double x = points[0].x() + i * delta;
-        interpolatedPoints[i].setX(x);
-        interpolatedPoints[i].setY(spline.value(x));
-    }
-    return interpolatedPoints;
-}
-  \endcode
-*/
+        ParameterX,
+        ParameterUniform,
+        ParameterCentripetral,
+        ParameterChordal,
+        ParameterManhattan
+    };
+
+    QwtSplineParameter( int type );
+    virtual ~QwtSplineParameter();
+
+    int type() const;
+
+    virtual double value( const QPointF &p1, const QPointF &p2 ) const;
+    
+    static double valueX( const QPointF &p1, const QPointF &p2 );
+    static double valueChordal( const QPointF &p1, const QPointF &p2 );
+    static double valueUniform( const QPointF &p1, const QPointF &p2 );
+    static double valueManhattan( const QPointF &p1, const QPointF &p2 );
+
+    struct param
+    {
+        param( const QwtSplineParameter * );
+        double operator()( const QPointF &p1, const QPointF &p2 ) const;
+
+        const QwtSplineParameter *parameter;
+    };
+
+    struct paramX
+    {
+        double operator()( const QPointF &p1, const QPointF &p2 ) const;
+    };
+
+    struct paramUniform
+    {
+        double operator()( const QPointF &p1, const QPointF &p2 ) const;
+    };
+
+    struct paramChordal
+    {
+        double operator()( const QPointF &p1, const QPointF &p2 ) const;
+    };
+
+    struct paramManhattan
+    {
+        double operator()( const QPointF &p1, const QPointF &p2 ) const;
+    };
+
+private:
+    const int d_type;
+};
 
 class QWT_EXPORT QwtSpline
 {
 public:
-    //! Spline type
-    enum SplineType
+    QwtSpline();
+    virtual ~QwtSpline();
+
+    void setParametrization( int type );
+    void setParametrization( QwtSplineParameter * );
+    const QwtSplineParameter *parametrization() const;
+
+    void setClosing( bool );
+    bool isClosing() const;
+
+    virtual QPainterPath pathP( const QPolygonF & ) const;
+    virtual QPolygonF polygonP( const QPolygonF &, 
+        double distance, bool withNodes ) const;
+
+    virtual QVector<QLineF> bezierControlPointsP( const QPolygonF &points ) const = 0;
+
+private:
+    QwtSplineParameter *d_parameter;
+    bool d_isClosing;
+};
+
+class QWT_EXPORT QwtSplineG1: public QwtSpline
+{           
+public:     
+    QwtSplineG1();
+    virtual ~QwtSplineG1();
+};
+
+class QWT_EXPORT QwtSplineC1: public QwtSplineG1
+{
+public:
+    enum BoundaryCondition 
     {
-        //! A natural spline
+        Clamped,
+        Clamped2,
+        Clamped3,
+
         Natural,
 
-        //! A periodic spline
+        LinearRunout,
+        ParabolicRunout,
+        CubicRunout,
+
+        NotAKnot,
         Periodic
     };
 
-    QwtSpline();
-    QwtSpline( const QwtSpline & );
+    QwtSplineC1();
+    virtual ~QwtSplineC1();
 
-    ~QwtSpline();
+    void setBoundaryConditions( BoundaryCondition );
+    BoundaryCondition boundaryCondition() const;
 
-    QwtSpline &operator=( const QwtSpline & );
+    void setBoundaryValues( double valueBegin, double valueEnd );
 
-    void setSplineType( SplineType );
-    SplineType splineType() const;
+    double boundaryValueBegin() const;
+    double boundaryValueEnd() const;
 
-    bool setPoints( const QPolygonF& points );
-    QPolygonF points() const;
+    virtual QPainterPath pathP( const QPolygonF & ) const;
+    virtual QVector<QLineF> bezierControlPointsP( const QPolygonF &points ) const;
 
-    void reset();
+    virtual QVector<double> slopesX( const QPolygonF & ) const = 0;
 
-    bool isValid() const;
-    double value( double x ) const;
+    virtual QPolygonF polygonX( int numPoints, const QPolygonF & ) const;
+    virtual QVector<QwtSplinePolynom> polynomsX( const QPolygonF & ) const;
 
-    const QVector<double> &coefficientsA() const;
-    const QVector<double> &coefficientsB() const;
-    const QVector<double> &coefficientsC() const;
-
-protected:
-    bool buildNaturalSpline( const QPolygonF & );
-    bool buildPeriodicSpline( const QPolygonF & );
+//protected:
+    virtual double slopeBegin( const QPolygonF &points, double m1, double m2 ) const;
+    virtual double slopeEnd( const QPolygonF &points, double m1, double m2 ) const;
 
 private:
     class PrivateData;
     PrivateData *d_data;
 };
+
+class QWT_EXPORT QwtSplineC2: public QwtSplineC1
+{
+public:
+    QwtSplineC2();
+    virtual ~QwtSplineC2();
+
+    virtual QVector<double> curvaturesX( const QPolygonF & ) const = 0;
+};
+
+inline double QwtSplineParameter::valueX( 
+    const QPointF &p1, const QPointF &p2 ) 
+{
+    return p2.x() - p1.x();
+}
+
+inline double QwtSplineParameter::valueUniform(
+    const QPointF &p1, const QPointF &p2 )
+{
+    Q_UNUSED( p1 )
+    Q_UNUSED( p2 )
+
+    return 1.0;
+}
+
+inline double QwtSplineParameter::valueChordal( 
+    const QPointF &p1, const QPointF &p2 ) 
+{
+    const double dx = p1.x() - p2.x();
+    const double dy = p1.y() - p2.y();
+
+    return qSqrt( dx * dx + dy * dy );
+}
+
+inline double QwtSplineParameter::valueManhattan(
+    const QPointF &p1, const QPointF &p2 )
+{
+    return qAbs( p2.x() - p1.x() ) + qAbs( p2.y() - p1.y() );
+}
+
+inline QwtSplineParameter::param::param( const QwtSplineParameter *p ):
+    parameter( p ) 
+{
+}
+    
+inline double QwtSplineParameter::param::operator()( 
+    const QPointF &p1, const QPointF &p2 ) const
+{
+    return parameter->value( p1, p2 );
+}
+
+inline double QwtSplineParameter::paramX::operator()( 
+    const QPointF &p1, const QPointF &p2 ) const 
+{
+    return QwtSplineParameter::valueX( p1, p2 );
+}
+
+inline double QwtSplineParameter::paramUniform::operator()(
+    const QPointF &p1, const QPointF &p2 ) const
+{
+    return QwtSplineParameter::valueUniform( p1, p2 );
+}
+    
+inline double QwtSplineParameter::paramChordal::operator()( 
+    const QPointF &p1, const QPointF &p2 ) const 
+{
+    return QwtSplineParameter::valueChordal( p1, p2 );
+}
+
+inline double QwtSplineParameter::paramManhattan::operator()( 
+    const QPointF &p1, const QPointF &p2 ) const 
+{
+    return QwtSplineParameter::valueManhattan( p1, p2 );
+}
 
 #endif

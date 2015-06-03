@@ -79,7 +79,6 @@ void QwtCounter::initCounter()
         QwtArrowButton *btn =
             new QwtArrowButton( i + 1, Qt::DownArrow, this );
         btn->setFocusPolicy( Qt::NoFocus );
-        btn->installEventFilter( this );
         layout->addWidget( btn );
 
         connect( btn, SIGNAL( released() ), SLOT( btnReleased() ) );
@@ -103,7 +102,6 @@ void QwtCounter::initCounter()
         QwtArrowButton *btn =
             new QwtArrowButton( i + 1, Qt::UpArrow, this );
         btn->setFocusPolicy( Qt::NoFocus );
-        btn->installEventFilter( this );
         layout->addWidget( btn );
 
         connect( btn, SIGNAL( released() ), SLOT( btnReleased() ) );

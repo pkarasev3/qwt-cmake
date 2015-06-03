@@ -8,6 +8,7 @@
 
 #include "qwt_polar_marker.h"
 #include "qwt_polar.h"
+#include <qdebug.h>
 #include <qwt_scale_map.h>
 #include <qwt_symbol.h>
 #include <qwt_text.h>
@@ -97,9 +98,11 @@ void QwtPolarMarker::draw( QPainter *painter,
     const double a = azimuthMap.transform( d_data->pos.azimuth() );
 
     const QPointF pos = qwtPolar2Pos( pole, r, a );
-    Q_ASSERT_X(std::max(std::fabs(pos.y()),std::fabs(pos.x()))<5e3,__FUNCTION__,
-               "screen coords are absurdly large, probably got math error.");
-
+    if(std::max(std::fabs(pos.y()),std::fabs(pos.x()))>5e3)
+    {
+        qWarning()<<__FUNCTION__ <<":  screen coords are absurdly large; "
+                                 <<"probably got math error.";
+    }
     // draw symbol
     QSize sSym( 0, 0 );
     if ( d_data->symbol->style() != QwtSymbol::NoSymbol )

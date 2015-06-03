@@ -20,7 +20,9 @@
   definitions for common math constants.  These are placed under an #ifdef
   since these commonly-defined names are not part of the C/C++ standards.
 */
+#if !defined(_USE_MATH_DEFINES)
 #define _USE_MATH_DEFINES 1
+#endif
 #endif
 
 #include <qmath.h>
@@ -73,17 +75,6 @@ inline int qwtFuzzyCompare( double value1, double value2, double intervalSize )
     return 0;
 }
 
-
-inline bool qwtFuzzyGreaterOrEqual( double d1, double d2 )
-{
-    return ( d1 >= d2 ) || qFuzzyCompare( d1, d2 );
-}
-
-inline bool qwtFuzzyLessOrEqual( double d1, double d2 )
-{
-    return ( d1 <= d2 ) || qFuzzyCompare( d1, d2 );
-}
-
 //! Return the sign
 inline int qwtSign( double x )
 {
@@ -134,13 +125,30 @@ inline double qwtFastAtan2( double y, double x )
     return 0.0;
 }
 
-// Translate degrees into radians
+/* !
+   \brief Calculate a value of a cubic polynom 
+
+   \param x Value
+   \param a Cubic coefficient
+   \param b Quadratic coefficient
+   \param c Linear coefficient
+   \param d Connstant offset
+
+   \return Value of the polyonom for x
+*/
+inline double qwtCubicPolynom( double x, 
+    double a, double b, double c, double d )
+{
+    return ( ( ( a * x ) + b ) * x + c ) * x + d;
+}
+
+//! Translate degrees into radians
 inline double qwtRadians( double degrees )
 {
     return degrees * M_PI / 180.0;
 }
 
-// Translate radians into degrees
+//! Translate radians into degrees
 inline double qwtDegrees( double degrees )
 {
     return degrees * 180.0 / M_PI;

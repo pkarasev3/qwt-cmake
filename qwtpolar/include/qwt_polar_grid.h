@@ -80,7 +80,7 @@ public:
         /*!
         All grid lines are clipped against the plot area before being painted.
         When the plot is zoomed in this will have an significant impact
-        on the performance of the painting cde.
+        on the performance of the painting code.
          */
         ClipGridLines = 16
     };

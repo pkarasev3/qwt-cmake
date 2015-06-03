@@ -120,9 +120,11 @@ public:
     void setRenderMode( RenderMode );
     RenderMode renderMode() const;
 
-    void updateOverlay();
 
     virtual bool eventFilter( QObject *, QEvent *);
+
+public Q_SLOTS:
+    void updateOverlay();
 
 protected:
     virtual void paintEvent( QPaintEvent* event );

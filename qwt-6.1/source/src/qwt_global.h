@@ -8,13 +8,12 @@
  *****************************************************************************/
 #pragma once
 
-
-#include <qglobal.h>
+#include <QtCore/QtGlobal> 
 
 // QWT_VERSION is (major << 16) + (minor << 8) + patch.
 
-#define QWT_VERSION       0x060101
-#define QWT_VERSION_STR   "6.1.1"
+#define QWT_VERSION       0x060200
+#define QWT_VERSION_STR   "6.2.0"
 
 #if defined(_MSC_VER) /* MSVC Compiler */
 /* template-class specialization 'identifier' is already instantiated */
@@ -24,7 +23,7 @@
 #endif // _MSC_VER
 
 
-// Copyright 2012 Agilent Technologies, Inc , Agilent Confidential
+// Copyright 2012 Keysight Technologies, Inc , Keysight Confidential
 #pragma once
 
 #if defined(_WIN32) // static is not supported; need to ensure runtime registration into singleton containers
